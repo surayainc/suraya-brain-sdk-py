@@ -1,0 +1,172 @@
+# Per-repo conformance check.
+#
+# Verifies that this repo has every required file from the YNK
+# new-project gate. Runs on every PR and on a daily schedule. Add
+# `suraya-conformance` to the list of required status checks in your
+# branch protection so missing files block merge.
+#
+# Source of truth for the required-files list:
+# https://github.com/surayainc/suraya/blob/main/governance/new-project-checklist.md
+#
+# When the source-of-truth list changes, also update the REQUIRED_FILES
+# array in this workflow. The suraya org-wide audit workflow uses the
+# same list — both should drift together.
+#
+# Exceptions: if your repo has a granted exception (see the new-project
+# checklist), add a `.suraya-exception` file at the repo root listing
+# the exempted paths, one per line. The check skips files listed there
+# and emits a notice. Exceptions must be tracked in the suraya
+# new-project-checklist.md exceptions table — a `.suraya-exception`
+# file without a corresponding entry there will be flagged by the
+# org-wide audit as an unauthorized self-exemption.
+
+name: suraya-conformance
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Daily at 06:00 UTC (08:00 Cairo). Catches files deleted directly
+    # on main outside the PR flow (which shouldn't happen, but does).
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: suraya-conformance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify required files exist
+        shell: bash
+        run: |
+          set -u
+
+          # ----------------------------------------------------------------
+          # Required files. Mirror of governance/new-project-checklist.md.
+          # ----------------------------------------------------------------
+          REQUIRED_FILES=(
+            "README.md"
+            "CLAUDE.md"
+            "HANDOFF.md"
+            "LICENSE"
+            ".gitignore"
+            ".github/CODEOWNERS"
+            ".github/pull_request_template.md"
+            ".github/SECURITY.md"
+            ".github/ISSUE_TEMPLATE/config.yml"
+            ".github/workflows/ci.yml"
+            ".github/workflows/agent-pr-approval.yml"
+            ".github/workflows/suraya-conformance.yml"
+            ".claude/settings.json"
+            ".cursorrules"
+            "docs/adr/README.md"
+            "docs/adr/0000-template.md"
+          )
+
+          # Renovate config can be in either of two locations. Pass if
+          # at least one is present.
+          RENOVATE_VARIANTS=(
+            "renovate.json"
+            ".github/renovate.json"
+          )
+
+          # Cursor rules can be in either of two locations.
+          CURSOR_VARIANTS=(
+            ".cursorrules"
+            ".cursor/rules"
+          )
+
+          # Read exception list if present. Lines starting with # are comments.
+          EXCEPTIONS=()
+          if [ -f ".suraya-exception" ]; then
+            while IFS= read -r line; do
+              line="${line%%#*}"  # strip inline comments
+              line="${line#"${line%%[![:space:]]*}"}"  # ltrim
+              line="${line%"${line##*[![:space:]]}"}"  # rtrim
+              [ -z "$line" ] && continue
+              EXCEPTIONS+=("$line")
+            done < ".suraya-exception"
+            echo "::notice::Found .suraya-exception with ${#EXCEPTIONS[@]} entry/entries. These will be skipped."
+            for e in "${EXCEPTIONS[@]}"; do
+              echo "  - $e"
+            done
+          fi
+
+          is_excepted() {
+            local path="$1"
+            for e in "${EXCEPTIONS[@]}"; do
+              if [ "$path" = "$e" ]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          MISSING=()
+
+          # ----------------------------------------------------------------
+          # Check unique-path required files
+          # ----------------------------------------------------------------
+          for path in "${REQUIRED_FILES[@]}"; do
+            if is_excepted "$path"; then
+              echo "::notice::skipping $path (in .suraya-exception)"
+              continue
+            fi
+            if [ ! -e "$path" ]; then
+              MISSING+=("$path")
+            else
+              echo "ok      $path"
+            fi
+          done
+
+          # ----------------------------------------------------------------
+          # Check at-least-one-of variants
+          # ----------------------------------------------------------------
+          check_variants() {
+            local label="$1"
+            shift
+            local variants=("$@")
+            for v in "${variants[@]}"; do
+              if is_excepted "$v"; then
+                echo "::notice::skipping $v (in .suraya-exception)"
+              fi
+              if [ -e "$v" ]; then
+                echo "ok      $label found at $v"
+                return 0
+              fi
+            done
+            MISSING+=("$label (one of: ${variants[*]})")
+            return 1
+          }
+
+          check_variants "renovate config" "${RENOVATE_VARIANTS[@]}" || true
+          check_variants "cursor rules"   "${CURSOR_VARIANTS[@]}"   || true
+
+          # ----------------------------------------------------------------
+          # Report
+          # ----------------------------------------------------------------
+          if [ "${#MISSING[@]}" -gt 0 ]; then
+            echo ""
+            echo "::error::suraya-conformance FAILED — ${#MISSING[@]} required path(s) missing:"
+            for m in "${MISSING[@]}"; do
+              echo "::error::  missing: $m"
+            done
+            echo ""
+            echo "Required-files list lives at:"
+            echo "  https://github.com/surayainc/suraya/blob/main/governance/new-project-checklist.md"
+            echo ""
+            echo "If this repo has a granted exception, add the path(s) to a"
+            echo ".suraya-exception file at the repo root and ensure the exception"
+            echo "is tracked in the suraya new-project-checklist.md exceptions table."
+            exit 1
+          fi
+
+          echo ""
+          echo "suraya-conformance OK — all required paths present."
