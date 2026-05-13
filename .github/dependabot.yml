@@ -1,0 +1,15 @@
+# Dependabot — keep dependencies updated, surface vulns early.
+#
+# Suraya v1.4 hardening baseline. Github Actions covered for all repos;
+# per-repo language ecosystems are appended by the bootstrap.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      gh-actions:
+        patterns:
+          - "*"
