@@ -57,7 +57,7 @@ jobs:
       TIER_N_GRANTS_PATH: governance/tier-n-grants.md
     steps:
       - name: Check approval count for agent-generated PRs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // Resolve the PR object regardless of which event triggered us.
