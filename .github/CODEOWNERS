@@ -1,0 +1,19 @@
+# CODEOWNERS — Suraya v1.4 hardening baseline.
+#
+# All changes require review from @kesuraya (Tier 0 / master grant holder).
+# As the active Tier N roster grows, add more entries below.
+#
+# See https://github.com/surayainc/suraya/blob/main/governance/role-definitions.md
+# for tier conventions and CODEOWNERS patterns.
+
+# Default owner for everything in this repo
+*                          @kesuraya
+
+# Architectural decision records require Tier 0 sign-off
+/docs/adr/                 @kesuraya
+
+# CI / conformance / branch protection / security tooling
+/.github/                  @kesuraya
+/.claude/                  @kesuraya
+/.cursorrules              @kesuraya
+/renovate.json             @kesuraya
