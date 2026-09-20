@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 ObservationType = Literal[
     "decision",
@@ -24,7 +24,7 @@ MemoryNodeStatus = Literal["draft", "proposed", "standard", "historic"]
 class RetrieveResult:
     node_id: str
     scope: MemoryNodeScope
-    project_slug: Optional[str]
+    project_slug: str | None
     type: ObservationType
     status: MemoryNodeStatus
     representative_summary: str
@@ -32,7 +32,7 @@ class RetrieveResult:
     confidence: float
     similarity: float
     evidence_count: int
-    last_reinforced_at: Optional[str]
+    last_reinforced_at: str | None
     sample_observation_ids: list[str]
 
 
@@ -49,12 +49,12 @@ class ObservationInput:
     representative_summary: str
     criticality: Criticality
     actor_handle: str
-    project_slug: Optional[str] = None
+    project_slug: str | None = None
     tags: list[str] = field(default_factory=list)
     linked_observation_ids: list[str] = field(default_factory=list)
     payload: dict[str, Any] = field(default_factory=dict)
-    validity_start: Optional[str] = None
-    validity_end: Optional[str] = None
+    validity_start: str | None = None
+    validity_end: str | None = None
 
 
 @dataclass
@@ -87,8 +87,8 @@ class BrainError(Exception):
         self,
         kind: BrainErrorKind,
         message: str,
-        status: Optional[int] = None,
-        retry_after_seconds: Optional[int] = None,
+        status: int | None = None,
+        retry_after_seconds: int | None = None,
     ) -> None:
         super().__init__(message)
         self.kind = kind

@@ -10,7 +10,7 @@ import hashlib
 import hmac
 import json
 from dataclasses import asdict
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
@@ -22,6 +22,9 @@ from .types import (
     RetrieveResponse,
     RetrieveResult,
 )
+
+if TYPE_CHECKING:
+    from typing import Self
 
 SIGNATURE_HEADER = "X-Suraya-Signature"
 
@@ -39,8 +42,8 @@ class BrainClient:
         base_url: str,
         project_slug: str,
         *,
-        hmac_secret: Optional[str] = None,
-        bootstrap_token: Optional[str] = None,
+        hmac_secret: str | None = None,
+        bootstrap_token: str | None = None,
         timeout: float = 30.0,
     ) -> None:
         if (hmac_secret is None) == (bootstrap_token is None):
@@ -53,10 +56,10 @@ class BrainClient:
         self._bootstrap_token = bootstrap_token
         self._client = httpx.Client(timeout=timeout)
 
-    def __enter__(self) -> "BrainClient":
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(self, *_: object) -> None:
         self.close()
 
     def close(self) -> None:
@@ -66,7 +69,7 @@ class BrainClient:
         self,
         q: str,
         top_k: int = 10,
-        scope: Optional[str] = None,
+        scope: str | None = None,
     ) -> RetrieveResponse:
         top_k = max(1, min(50, int(top_k)))
         canonical = f"{self.project_slug}|{q}|{top_k}"
