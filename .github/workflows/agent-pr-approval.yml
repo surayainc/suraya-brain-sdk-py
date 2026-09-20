@@ -67,7 +67,7 @@ jobs:
       GRANTS_READ_TOKEN: ${{ secrets.SURAYA_READ_TOKEN || secrets.GRANTS_READ_TOKEN }}
     steps:
       - name: Check approval count for agent-generated PRs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // Resolve the PR object regardless of which event triggered us.
