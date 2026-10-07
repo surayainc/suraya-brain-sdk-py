@@ -7,29 +7,29 @@ same HMAC signing scheme; same discriminated error model. MIT licensed.
 from .client import BrainClient
 from .types import (
     BrainError,
-    ObservationInput,
-    ObservationType,
     Criticality,
-    MemoryNodeScope,
-    MemoryNodeStatus,
-    RetrieveResult,
-    RetrieveResponse,
     EmitResponse,
     HealthResponse,
+    MemoryNodeScope,
+    MemoryNodeStatus,
+    ObservationInput,
+    ObservationType,
+    RetrieveResponse,
+    RetrieveResult,
 )
 
 __all__ = [
     "BrainClient",
     "BrainError",
-    "ObservationInput",
-    "ObservationType",
     "Criticality",
-    "MemoryNodeScope",
-    "MemoryNodeStatus",
-    "RetrieveResult",
-    "RetrieveResponse",
     "EmitResponse",
     "HealthResponse",
+    "MemoryNodeScope",
+    "MemoryNodeStatus",
+    "ObservationInput",
+    "ObservationType",
+    "RetrieveResponse",
+    "RetrieveResult",
 ]
 
 __version__ = "0.1.0"
